@@ -1,4 +1,5 @@
 require 'socket'
+require 'byebug'
 
 def main
   socket = Socket.new(:INET, :STREAM)
@@ -8,7 +9,8 @@ def main
   conn_sock, addr_info = socket.accept
   # puts conn_sock.recv(4096)
   conn = Connection.new(conn_sock)
-  read_request(conn)
+  p conn
+  p read_request(conn)
 end
 
 class Connection
@@ -24,7 +26,7 @@ class Connection
   def read_until(string)
     until @buffer.include?(string)
       @buffer += @conn_sock.recv(7)
-      p @buffer
+      # p @buffer
     end
     result, @buffer = @buffer.split(string, 2)
     result
@@ -33,8 +35,16 @@ end
 
 def read_request(conn)
   request_line = conn.read_line
+  puts request_line
   method, path, version = request_line.split(" ", 3)
+  # process headers
   headers = {}
+  loop do
+    line = conn.read_line
+    break if line.empty?
+    key, value = line.split(/:\s*/, 2)
+    headers[key] = value
+  end
   Request.new(method, path, headers)
 end
 
